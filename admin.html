@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin – Weiterbildungsplattform</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>Adminbereich</h1>
+  <p class="lead">Hier können Inhalte und Module der Plattform verwaltet werden.</p>
+</header>
+
+<nav style="text-align:center; margin:20px 0;">
+  <button onclick="history.back()">⬅️ Zurück</button>
+  <button onclick="location.href='index.html'" style="margin-left:10px">🏠 Startseite</button>
+</nav>
+
+<section>
+  <h2>Neues Modul anlegen</h2>
+  <input id="moduleTitle" placeholder="Modultitel" style="padding:10px;margin:5px;border-radius:6px;border:none">
+  <input id="moduleDesc" placeholder="Beschreibung" style="padding:10px;margin:5px;border-radius:6px;border:none;width:260px">
+  <button onclick="addModule()">Modul hinzufügen</button>
+</section>
+
+<section>
+  <h2>Vorhandene Module</h2>
+  <div id="moduleList" class="features"></div>
+</section>
+
+<script>
+const MODULE_KEY = 'training_modules';
+
+function saveModules(list){
+  localStorage.setItem(MODULE_KEY, JSON.stringify(list));
+}
+
+function loadModules(){
+  const data = JSON.parse(localStorage.getItem(MODULE_KEY) || '[]');
+  const container = document.getElementById('moduleList');
+  container.innerHTML = '';
+
+  data.forEach((m,i)=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <span>📘</span>
+      <h3>${m.title}</h3>
+      <p>${m.desc}</p>
+      <button onclick="deleteModule(${i})">Löschen</button>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function addModule(){
+  const title = document.getElementById('moduleTitle').value.trim();
+  const desc = document.getElementById('moduleDesc').value.trim();
+  if(!title || !desc) return;
+
+  const data = JSON.parse(localStorage.getItem(MODULE_KEY) || '[]');
+  data.push({title, desc});
+  saveModules(data);
+
+  document.getElementById('moduleTitle').value='';
+  document.getElementById('moduleDesc').value='';
+
+  loadModules();
+}
+
+function deleteModule(index){
+  const data = JSON.parse(localStorage.getItem(MODULE_KEY) || '[]');
+  data.splice(index,1);
+  saveModules(data);
+  loadModules();
+}
+
+window.addEventListener('DOMContentLoaded', loadModules);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kurse – Weiterbildungsplattform</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1 id="moduleTitle">Modul-Kurse</h1>
+  <p class="lead">Wähle einen Kurs aus diesem Modul.</p>
+</header>
+
+<nav style="text-align:center; margin:20px 0;">
+  <button onclick="history.back()">⬅️ Zurück</button>
+  <button onclick="location.href='index.html'" style="margin-left:10px">🏠 Startseite</button>
+</nav>
+
+<section>
+  <div id="courseList" class="features"></div>
+</section>
+
+<footer>
+  © Weiterbildungsprojekt
+</footer>
+
+<script src="js/db.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

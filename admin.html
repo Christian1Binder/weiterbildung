@@ -25,60 +25,36 @@
   <button onclick="addModule()">Modul hinzufügen</button>
 </section>
 
-<section>
+<section id="moduleManagement">
   <h2>Vorhandene Module</h2>
   <div id="moduleList" class="features"></div>
 </section>
 
-<script>
-const MODULE_KEY = 'training_modules';
+<section id="courseManagement" style="display:none; background:rgba(255,255,255,0.03); padding:20px; border-radius:14px; margin-top:40px">
+  <h2 id="selectedModuleTitle">Kursverwaltung</h2>
+  <div style="margin-bottom:20px">
+    <input id="courseTitle" placeholder="Kurstitel" style="padding:10px;margin:5px;border-radius:6px;border:none">
+    <input id="courseDesc" placeholder="Beschreibung" style="padding:10px;margin:5px;border-radius:6px;border:none;width:260px">
+    <button onclick="addCourse()">Kurs hinzufügen</button>
+    <button onclick="closeCourseMgmt()" style="background:var(--muted); margin-left:10px">Schließen</button>
+  </div>
+  <div id="courseList" class="features"></div>
+</section>
 
-function saveModules(list){
-  localStorage.setItem(MODULE_KEY, JSON.stringify(list));
-}
+<section id="lessonManagement" style="display:none; background:rgba(255,255,255,0.03); padding:20px; border-radius:14px; margin-top:40px">
+  <h2 id="selectedCourseTitle">Lektionsverwaltung</h2>
+  <div style="margin-bottom:20px">
+    <input id="lessonTitle" placeholder="Lektionstitel" style="padding:10px;margin:5px;border-radius:6px;border:none; display:block; width:100%; max-width:400px">
+    <textarea id="lessonContent" placeholder="Inhalt (HTML/Text)" style="width:100%; height:100px; margin:5px; border-radius:8px; background:white; color:black; padding:10px; border:none; display:block"></textarea>
+    <button onclick="addLesson()">Lektion hinzufügen</button>
+    <button onclick="closeLessonMgmt()" style="background:var(--muted); margin-left:10px">Schließen</button>
+  </div>
+  <div id="lessonList"></div>
+</section>
 
-function loadModules(){
-  const data = JSON.parse(localStorage.getItem(MODULE_KEY) || '[]');
-  const container = document.getElementById('moduleList');
-  container.innerHTML = '';
-
-  data.forEach((m,i)=>{
-    const card = document.createElement('div');
-    card.className = 'card';
-    card.innerHTML = `
-      <span>📘</span>
-      <h3>${m.title}</h3>
-      <p>${m.desc}</p>
-      <button onclick="deleteModule(${i})">Löschen</button>
-    `;
-    container.appendChild(card);
-  });
-}
-
-function addModule(){
-  const title = document.getElementById('moduleTitle').value.trim();
-  const desc = document.getElementById('moduleDesc').value.trim();
-  if(!title || !desc) return;
-
-  const data = JSON.parse(localStorage.getItem(MODULE_KEY) || '[]');
-  data.push({title, desc});
-  saveModules(data);
-
-  document.getElementById('moduleTitle').value='';
-  document.getElementById('moduleDesc').value='';
-
-  loadModules();
-}
-
-function deleteModule(index){
-  const data = JSON.parse(localStorage.getItem(MODULE_KEY) || '[]');
-  data.splice(index,1);
-  saveModules(data);
-  loadModules();
-}
-
-window.addEventListener('DOMContentLoaded', loadModules);
-</script>
+<script src="js/db.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
 
 </body>
 </html>

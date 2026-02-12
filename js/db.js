@@ -1,6 +1,7 @@
 const DB_KEY = 'training_cms_data';
 const USER_PROGRESS_KEY = 'training_user_progress';
 const USER_FAVORITES_KEY = 'training_user_favorites';
+const CURRENT_USER_KEY = 'training_current_user_id';
 const OLD_MODULE_KEY = 'training_modules';
 
 const db = {
@@ -14,24 +15,28 @@ const db = {
             // Try migration from old format
             const oldModules = localStorage.getItem(OLD_MODULE_KEY);
             if (oldModules) {
-                const modules = JSON.parse(oldModules).map(m => ({
+                const modules = JSON.parse(oldModules).map((m, i) => ({
                     id: Math.random().toString(36).substr(2, 9),
                     title: m.title,
                     desc: m.desc,
+                    order: i + 1,
                     courses: []
                 }));
-                data = { modules };
+                data = { modules, users: [] }; // Init users
                 this.save(data);
             } else {
-                data = { modules: [] };
+                data = { modules: [], users: [] };
             }
         } else {
             data = JSON.parse(data);
+            if (!data.users) {
+                data.users = []; // Ensure users array exists
+            }
         }
         return data;
     },
     getModules() {
-        return this.load().modules;
+        return this.load().modules.sort((a, b) => (a.order || 0) - (b.order || 0));
     },
     getModule(id) {
         return this.load().modules.find(m => m.id === id);
@@ -42,18 +47,20 @@ const db = {
             id: Date.now().toString(),
             title,
             desc,
+            order: data.modules.length + 1,
             courses: []
         };
         data.modules.push(newModule);
         this.save(data);
         return newModule;
     },
-    updateModule(id, title, desc) {
+    updateModule(id, title, desc, order) {
         const data = this.load();
         const module = data.modules.find(m => m.id === id);
         if (module) {
             module.title = title;
             module.desc = desc;
+            if (order !== undefined) module.order = parseInt(order);
             this.save(data);
         }
     },
@@ -62,7 +69,7 @@ const db = {
         data.modules = data.modules.filter(m => m.id !== id);
         this.save(data);
     },
-    addCourse(moduleId, title, desc) {
+    addCourse(moduleId, title, desc, difficulty = "Mittel") {
         const data = this.load();
         const module = data.modules.find(m => m.id === moduleId);
         if (module) {
@@ -70,6 +77,8 @@ const db = {
                 id: Date.now().toString(),
                 title,
                 desc,
+                difficulty,
+                order: module.courses.length + 1,
                 lessons: []
             };
             module.courses.push(newCourse);
@@ -77,19 +86,25 @@ const db = {
             return newCourse;
         }
     },
-    updateCourse(moduleId, courseId, title, desc) {
+    updateCourse(moduleId, courseId, title, desc, order, difficulty) {
         const data = this.load();
         const module = data.modules.find(m => m.id === moduleId);
         const course = module?.courses.find(c => c.id === courseId);
         if (course) {
             course.title = title;
             course.desc = desc;
+            if (order !== undefined) course.order = parseInt(order);
+            if (difficulty) course.difficulty = difficulty;
             this.save(data);
         }
     },
     getCourse(moduleId, courseId) {
         const module = this.getModule(moduleId);
-        return module?.courses.find(c => c.id === courseId);
+        const course = module?.courses.find(c => c.id === courseId);
+        if (course && course.lessons) {
+            course.lessons.sort((a, b) => (a.order || 0) - (b.order || 0));
+        }
+        return course;
     },
     deleteCourse(moduleId, courseId) {
         const data = this.load();
@@ -99,7 +114,7 @@ const db = {
             this.save(data);
         }
     },
-    addLesson(moduleId, courseId, title, content) {
+    addLesson(moduleId, courseId, title, content, duration = "15 min") {
         const data = this.load();
         const module = data.modules.find(m => m.id === moduleId);
         const course = module?.courses.find(c => c.id === courseId);
@@ -108,6 +123,8 @@ const db = {
                 id: Date.now().toString(),
                 title,
                 content,
+                duration,
+                order: course.lessons.length + 1,
                 quiz: null
             };
             course.lessons.push(newLesson);
@@ -115,7 +132,7 @@ const db = {
             return newLesson;
         }
     },
-    updateLesson(moduleId, courseId, lessonId, title, content) {
+    updateLesson(moduleId, courseId, lessonId, title, content, order, duration) {
         const data = this.load();
         const module = data.modules.find(m => m.id === moduleId);
         const course = module?.courses.find(c => c.id === courseId);
@@ -123,6 +140,8 @@ const db = {
         if (lesson) {
             lesson.title = title;
             lesson.content = content;
+            if (order !== undefined) lesson.order = parseInt(order);
+            if (duration) lesson.duration = duration;
             this.save(data);
         }
     },
@@ -153,6 +172,27 @@ const db = {
         const course = module?.courses.find(c => c.id === courseId);
         const lesson = course?.lessons.find(l => l.id === lessonId);
         return lesson?.quiz || null;
+    },
+
+    // --- USER MANAGEMENT ---
+    getUsers() {
+        return this.load().users || [];
+    },
+    getCurrentUser() {
+        const userId = localStorage.getItem(CURRENT_USER_KEY);
+        const users = this.getUsers();
+        // Default to admin if seed data not loaded yet, or guest
+        return users.find(u => u.id === userId) || { id: 'guest', role: 'user', name: 'Gast' };
+    },
+    setCurrentUser(userId) {
+        localStorage.setItem(CURRENT_USER_KEY, userId);
+    },
+    hasRole(requiredRole) {
+        const user = this.getCurrentUser();
+        const roles = ['user', 'editor', 'admin'];
+        const userRoleIdx = roles.indexOf(user.role);
+        const reqRoleIdx = roles.indexOf(requiredRole);
+        return userRoleIdx >= reqRoleIdx;
     },
 
     // --- USER PROGRESS ---

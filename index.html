@@ -8,30 +8,26 @@
 </head>
 <body>
 
-<header>
-  <div class="header-controls">
-      <div class="search-bar">
-          <span>🔍</span>
-          <input id="searchInput" placeholder="Suche..." onkeyup="filterModules()">
-      </div>
-      <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
-  </div>
+<!-- Navbar injected by js/ui.js -->
 
+<div class="page-header">
   <h1>🚀 Ausbildungs‑ & Weiterbildungsplattform</h1>
   <p class="lead">Strukturiertes Wissen, praxisnahe Ausbildung und kontinuierliche Entwicklung – alles an einem Ort.</p>
   <button onclick="document.getElementById('moduleSection').scrollIntoView({behavior:'smooth'})">Projekt starten</button>
-  <button onclick="location.href='admin.html'" style="margin-left:10px" class="secondary">Admin</button>
-</header>
+</div>
 
 <section>
   <h2>Unsere Vision</h2>
-  <p>
+  <p class="lead" style="font-size:1.1rem; max-width:100%">
   Ziel ist es, sämtliches Fach‑, Führungs‑ und Erfahrungswissen systematisch aufzubauen und für alle Mitarbeiter dauerhaft verfügbar zu machen.
   </p>
 </section>
 
 <section id="moduleSection">
-  <h2>Aktuelle Module</h2>
+  <div class="flex-between">
+      <h2>Aktuelle Module</h2>
+      <input id="searchInput" placeholder="🔍 Module suchen..." onkeyup="filterModules()" style="width:250px; margin:0">
+  </div>
   <div id="moduleList" class="features"></div>
 </section>
 
@@ -39,33 +35,34 @@
   <h2>Schwerpunkte</h2>
   <div class="features">
     <div class="card">
-      <span>📚</span>
+      <div class="card-icon">📚</div>
       <h3>Strukturierte Lernpfade</h3>
       <p>Klare Module vom Einstieg bis zur Expertenstufe.</p>
     </div>
     <div class="card">
-      <span>🧠</span>
+      <div class="card-icon">🧠</div>
       <h3>Wissensplattform</h3>
       <p>Zentrale Sammlung aller Prozesse, Erfahrungen und Best Practices.</p>
     </div>
     <div class="card">
-      <span>⚙️</span>
+      <div class="card-icon">⚙️</div>
       <h3>Praxisorientierte Ausbildung</h3>
       <p>Fallbeispiele, Übungen und reale Einsatzszenarien.</p>
     </div>
     <div class="card">
-      <span>📈</span>
+      <div class="card-icon">📈</div>
       <h3>Kontinuierliche Entwicklung</h3>
       <p>Fortlaufende Erweiterung der Lerninhalte und Kompetenzen.</p>
     </div>
   </div>
 </section>
 
-<footer>
+<footer style="text-align:center; padding:40px; color:var(--muted); font-size:0.9rem; border-top:1px solid var(--border); margin-top:60px">
   © Weiterbildungsprojekt – Wissensaufbau der Zukunft
 </footer>
 
 <script src="js/db.js"></script>
+<script src="js/seed.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/app.js"></script>
 

@@ -102,6 +102,113 @@ const SEED_DATA = {
                         { title: "Fehlerkultur", duration: "25 min", content: "<p>Fehler sind Lernchancen. Melden Sie Abweichungen, damit wir die Ursachen beheben können.</p>", order: 4 },
                         { title: "Audit & Zertifizierung", duration: "20 min", content: "<p>Regelmäßige Audits bestätigen die Wirksamkeit unseres QM-Systems.</p>", order: 5 }
                     ]
+                },
+                {
+                    title: "IT-Servicemanagement",
+                    desc: "Grundlagen, Prozesse und Best Practices im IT-Service (ITIL).",
+                    order: 2,
+                    courses: [
+                        {
+                            title: "ITIL V3 Foundation Crashkurs",
+                            desc: "Von der Strategie bis zur ständigen Verbesserung – der komplette Service Lifecycle.",
+                            order: 1,
+                            difficulty: "Mittel",
+                            lessons: [
+                                {
+                                    title: "1. Grundlagen & Rollen",
+                                    duration: "20 min",
+                                    content: `
+                                        <h3>Was ist ein Service?</h3>
+                                        <p>Ein Service liefert Mehrwert für Kunden, indem er gewünschte Ergebnisse erleichtert, ohne dass der Kunde Kosten und Risiken direkt trägt.</p>
+
+                                        <h4>Wichtige Begriffe</h4>
+                                        <ul>
+                                            <li><strong>Service Management:</strong> Fähigkeiten (Funktionen/Prozesse) zur Generierung von Nutzen.</li>
+                                            <li><strong>Stakeholder:</strong> Kunden (Käufer), Anwender (Nutzer), Supplier (Lieferanten).</li>
+                                            <li><strong>IT-SP:</strong> Typ 1 (Intern), Typ 2 (Shared), Typ 3 (Extern).</li>
+                                        </ul>
+
+                                        <h4>Rollen im Überblick</h4>
+                                        <div class="gamification-container" data-type="matching" data-config='{
+                                            "pairs": [
+                                                {"id": "1", "term": "Service Owner", "def": "Verantwortlich für den Service"},
+                                                {"id": "2", "term": "Process Owner", "def": "Zweckmäßigkeit des Prozesses"},
+                                                {"id": "3", "term": "Process Manager", "def": "Operatives Management"},
+                                                {"id": "4", "term": "RACI", "def": "Responsible, Accountable, Consulted, Informed"}
+                                            ]
+                                        }'></div>
+                                    `,
+                                    order: 1
+                                },
+                                {
+                                    title: "2. Strategy & Design (Die Planung)",
+                                    duration: "25 min",
+                                    content: `
+                                        <h3>Service Strategy (SS)</h3>
+                                        <p>Definition der Perspektive und Pläne. Wertschöpfung entsteht durch <strong>Utility</strong> (Zweckmäßigkeit) und <strong>Warranty</strong> (Zuverlässigkeit).</p>
+
+                                        <h3>Service Design (SD)</h3>
+                                        <p>Design neuer Services inkl. der 4 P's: People, Processes, Products, Partners.</p>
+
+                                        <h4>Verträge zuordnen</h4>
+                                        <div class="gamification-container" data-type="matching" data-config='{
+                                            "pairs": [
+                                                {"id": "sla", "term": "SLA", "def": "Vertrag mit dem Kunden"},
+                                                {"id": "ola", "term": "OLA", "def": "Interne Vereinbarung"},
+                                                {"id": "uc", "term": "UC", "def": "Vertrag mit externem Supplier"}
+                                            ]
+                                        }'></div>
+                                    `,
+                                    order: 2
+                                },
+                                {
+                                    title: "3. Transition & Operation (Der Betrieb)",
+                                    duration: "30 min",
+                                    content: `
+                                        <h3>Service Transition (ST)</h3>
+                                        <p>Sicherer Übergang in den Betrieb. Wichtigstes Element: <strong>Change Management</strong> (Standard, Normal, Emergency) und das <strong>SACM</strong> (Verwaltung von CIs).</p>
+
+                                        <h3>Service Operation (SO)</h3>
+                                        <p>Der tägliche Betrieb. Ziel: Services gemäß SLA erbringen.</p>
+
+                                        <h4>Prozesse sortieren</h4>
+                                        <p>Bringe die Phasen einer Störungsbehebung (Incident Mgmt) in die richtige Reihenfolge:</p>
+                                        <div class="gamification-container" data-type="sorting" data-config='{
+                                            "items": [
+                                                "Event/Alarm tritt auf",
+                                                "Incident Erfassung & Klassifizierung",
+                                                "Analyse & Diagnose",
+                                                "Lösung & Wiederherstellung",
+                                                "Schließung des Tickets"
+                                            ]
+                                        }'></div>
+                                    `,
+                                    order: 3
+                                },
+                                {
+                                    title: "4. Continual Service Improvement (CSI)",
+                                    duration: "15 min",
+                                    content: `
+                                        <h3>Ständige Verbesserung</h3>
+                                        <p>Nichts ist perfekt. Mit dem <strong>PDCA-Zyklus</strong> (Plan-Do-Check-Act) und dem CSI-Modell optimieren wir stetig.</p>
+
+                                        <h4>ITSM Kreuzworträtsel</h4>
+                                        <p>Teste dein Wissen zu den Abkürzungen!</p>
+                                        <div class="gamification-container" data-type="crossword" data-config='{
+                                            "size": 9,
+                                            "words": [
+                                                {"word": "PDCA", "clue": "Plan Do Check Act", "x": 0, "y": 0, "dir": "h"},
+                                                {"word": "CAB", "clue": "Change Advisory Board", "x": 2, "y": 0, "dir": "v"},
+                                                {"word": "KEDB", "clue": "Known Error Database", "x": 0, "y": 3, "dir": "h"},
+                                                {"word": "RFC", "clue": "Request for Change", "x": 5, "y": 2, "dir": "v"}
+                                            ]
+                                        }'></div>
+                                    `,
+                                    order: 4
+                                }
+                            ]
+                        }
+                    ]
                 }
             ]
         }
@@ -117,40 +224,45 @@ window.initSeedData = function() {
     const db = window.cmsDb;
     const existingData = localStorage.getItem('training_cms_data');
 
-    // Only seed if no data exists or modules array is empty
+    // Check if we need to full seed (empty DB)
     if (!existingData || (JSON.parse(existingData).modules && JSON.parse(existingData).modules.length === 0)) {
-        console.log("Seeding Database with rich content...");
-
-        // Construct the full data tree in memory
-        const modules = SEED_DATA.modules.map(m => ({
-            id: 'seed_mod_' + Math.random().toString(36).substr(2, 9),
-            title: m.title,
-            desc: m.desc,
-            order: m.order,
-            courses: m.courses.map(c => ({
-                id: 'seed_course_' + Math.random().toString(36).substr(2, 9),
-                title: c.title,
-                desc: c.desc,
-                order: c.order,
-                difficulty: c.difficulty,
-                lessons: c.lessons.map(l => ({
-                    id: 'seed_lesson_' + Math.random().toString(36).substr(2, 9),
-                    title: l.title,
-                    content: l.content,
-                    duration: l.duration,
-                    order: l.order,
-                    quiz: null
-                }))
-            }))
-        }));
-
-        const fullData = {
-            modules: modules,
-            users: SEED_DATA.users
-        };
-
-        db.save(fullData);
-        console.log("Seeding Complete. Reloading...");
-        location.reload();
+        console.log("Seeding Full Database...");
+        window.seedAll();
     }
+};
+
+window.seedAll = function() {
+    const db = window.cmsDb;
+    console.log("Executing Forced Seed...");
+
+    const modules = SEED_DATA.modules.map(m => ({
+        id: 'seed_mod_' + Math.random().toString(36).substr(2, 9),
+        title: m.title,
+        desc: m.desc,
+        order: m.order,
+        courses: m.courses.map(c => ({
+            id: 'seed_course_' + Math.random().toString(36).substr(2, 9),
+            title: c.title,
+            desc: c.desc,
+            order: c.order,
+            difficulty: c.difficulty,
+            lessons: c.lessons.map(l => ({
+                id: 'seed_lesson_' + Math.random().toString(36).substr(2, 9),
+                title: l.title,
+                content: l.content,
+                duration: l.duration,
+                order: l.order,
+                quiz: null
+            }))
+        }))
+    }));
+
+    const fullData = {
+        modules: modules,
+        users: SEED_DATA.users
+    };
+
+    db.save(fullData);
+    console.log("Seeding Complete.");
+    location.reload();
 };

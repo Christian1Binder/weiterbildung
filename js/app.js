@@ -1,50 +1,77 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const path = window.location.pathname;
-    const params = new URLSearchParams(window.location.search);
+    // 1. Initialize Seed Data (if empty)
+    if (window.initSeedData) {
+        window.initSeedData();
+    }
 
-    // Theme Check
+    // 2. Render Navigation
+    if (window.cmsUi && window.cmsUi.renderNavigation) {
+        window.cmsUi.renderNavigation();
+    }
+
+    // 3. Theme Check
     if (localStorage.getItem('theme') === 'light') {
         document.documentElement.setAttribute('data-theme', 'light');
     }
 
-    // Initialisiere Dashboard (User)
-    if (document.getElementById('moduleList') && !document.querySelector('h1').innerText.includes('Admin')) {
+    const path = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+    const user = window.cmsDb.getCurrentUser();
+
+    // 4. Role Protection (Simple Client-Side)
+    if (path.includes('admin.html') && !window.cmsDb.hasRole('editor')) { // Editor+ can see admin
+        alert('Zugriff verweigert. Bitte als Admin oder Editor anmelden.');
+        window.location.href = 'index.html';
+        return;
+    }
+
+    // 5. Page Initialization
+
+    // Dashboard (User View)
+    if (document.getElementById('moduleList') && !path.includes('admin.html')) {
         const modules = window.cmsDb.getModules();
         window.cmsUi.renderModules('moduleList', modules, false);
-        updateRecentActivity();
     }
 
-    // Initialisiere Adminbereich
-    if (document.querySelector('h1')?.innerText.includes('Adminbereich')) {
+    // Admin Dashboard
+    if (path.includes('admin.html')) {
         const modules = window.cmsDb.getModules();
         window.cmsUi.renderModules('moduleList', modules, true);
-        updateAdminStats();
+        if (window.updateAdminStats) window.updateAdminStats();
     }
 
-    // Initialisiere Kurs-Ansicht
+    // Course View
     if (path.includes('course.html')) {
         const moduleId = params.get('moduleId');
         const module = window.cmsDb.getModule(moduleId);
         if (module) {
-            document.getElementById('moduleTitle').innerText = module.title;
+            const heroTitle = document.querySelector('.page-header h1');
+            const heroDesc = document.querySelector('.page-header .lead');
+            if(heroTitle) heroTitle.innerText = module.title;
+            if(heroDesc) heroDesc.innerText = module.desc;
+
             window.cmsUi.renderCourses('courseList', moduleId, module.courses, false);
         }
     }
 
-    // Initialisiere Lektions-Liste
+    // Lesson List View
     if (path.includes('lesson.html')) {
         const moduleId = params.get('moduleId');
         const courseId = params.get('courseId');
         const course = window.cmsDb.getCourse(moduleId, courseId);
         if (course) {
-            document.getElementById('courseTitle').innerText = course.title;
+            const heroTitle = document.querySelector('.page-header h1');
+            const heroDesc = document.querySelector('.page-header .lead');
+            if(heroTitle) heroTitle.innerText = course.title;
+            if(heroDesc) heroDesc.innerText = course.desc;
+
             window.cmsUi.renderLessons('lessonList', moduleId, courseId, course.lessons, false);
         }
     }
 });
 
 /* =============================
-   HELPER / SHARED
+   GLOBAL ACTIONS
    ============================= */
 window.toggleTheme = function() {
     const current = document.documentElement.getAttribute('data-theme');
@@ -53,8 +80,19 @@ window.toggleTheme = function() {
     localStorage.setItem('theme', newTheme);
 };
 
+window.switchRole = function(role) {
+    const users = window.cmsDb.getUsers();
+    const targetUser = users.find(u => u.role === role);
+    if (targetUser) {
+        window.cmsDb.setCurrentUser(targetUser.id);
+        location.reload();
+    } else {
+        alert('Kein User mit dieser Rolle gefunden.');
+    }
+};
+
 /* =============================
-   ADMIN FUNKTIONEN
+   ADMIN FUNCTIONS
    ============================= */
 
 // --- MODULES ---
@@ -74,8 +112,10 @@ window.editModule = function(id) {
     if (!module) return;
     const newTitle = prompt("Neuer Titel:", module.title);
     const newDesc = prompt("Neue Beschreibung:", module.desc);
+    const newOrder = prompt("Neue Reihenfolge (Zahl):", module.order || 0);
+
     if (newTitle && newDesc) {
-        window.cmsDb.updateModule(id, newTitle, newDesc);
+        window.cmsDb.updateModule(id, newTitle, newDesc, newOrder);
         refreshModules();
     }
 };
@@ -102,7 +142,6 @@ window.manageCourses = function(moduleId) {
     const module = window.cmsDb.getModule(moduleId);
     document.getElementById('selectedModuleTitle').innerText = `Kurse in: ${module.title}`;
     document.getElementById('courseManagement').style.display = 'block';
-    // Scroll to section
     document.getElementById('courseManagement').scrollIntoView({behavior: 'smooth'});
     refreshCourses(moduleId);
 };
@@ -110,9 +149,11 @@ window.manageCourses = function(moduleId) {
 window.addCourse = function() {
     const title = document.getElementById('courseTitle').value.trim();
     const desc = document.getElementById('courseDesc').value.trim();
+    const difficulty = document.getElementById('courseDifficulty').value;
+
     if (!title || !desc || !currentModuleId) return;
 
-    window.cmsDb.addCourse(currentModuleId, title, desc);
+    window.cmsDb.addCourse(currentModuleId, title, desc, difficulty);
     refreshCourses(currentModuleId);
     clearInputs('courseTitle', 'courseDesc');
     updateAdminStats();
@@ -123,8 +164,12 @@ window.editCourse = function(moduleId, courseId) {
     if (!course) return;
     const newTitle = prompt("Neuer Titel:", course.title);
     const newDesc = prompt("Neue Beschreibung:", course.desc);
+    const newOrder = prompt("Neue Reihenfolge (Zahl):", course.order || 0);
+    // Difficulty is harder to prompt, maybe add to prompt or separate action.
+    // Keeping it simple with prompt for now, defaulting to existing.
+
     if (newTitle && newDesc) {
-        window.cmsDb.updateCourse(moduleId, courseId, newTitle, newDesc);
+        window.cmsDb.updateCourse(moduleId, courseId, newTitle, newDesc, newOrder, course.difficulty);
         refreshCourses(moduleId);
     }
 };
@@ -160,11 +205,13 @@ window.manageLessons = function(moduleId, courseId) {
 window.addLesson = function() {
     const title = document.getElementById('lessonTitle').value.trim();
     const content = document.getElementById('lessonContent').value.trim();
+    const duration = document.getElementById('lessonDuration').value.trim() || '15 min';
+
     if (!title || !content || !currentModuleId || !currentCourseId) return;
 
-    window.cmsDb.addLesson(currentModuleId, currentCourseId, title, content);
+    window.cmsDb.addLesson(currentModuleId, currentCourseId, title, content, duration);
     refreshLessons(currentModuleId, currentCourseId);
-    clearInputs('lessonTitle', 'lessonContent');
+    clearInputs('lessonTitle', 'lessonContent', 'lessonDuration');
     updateAdminStats();
 };
 
@@ -173,36 +220,29 @@ window.editLesson = function(moduleId, courseId, lessonId) {
     const lesson = course?.lessons.find(l => l.id === lessonId);
     if (!lesson) return;
 
-    // For simplicity, we just fill the input fields and delete the old one on save,
-    // OR we could make a proper edit mode.
-    // Given the constraints, let's use prompt for title, and maybe load content into textarea?
-    // Better: Populate the add form and change button to "Update".
-    // Even simpler for "simple admin": prompts for now, or just filling the inputs.
-
-    // Let's try filling inputs for better UX
+    // Populate form for editing
     document.getElementById('lessonTitle').value = lesson.title;
     document.getElementById('lessonContent').value = lesson.content;
+    document.getElementById('lessonDuration').value = lesson.duration || '15 min';
 
-    // Change Add button to Update button temporary?
-    // Or just delete and re-add logic? No, we lose ID.
-    // Let's implement a direct update via Prompt for now to be consistent,
-    // but for Content (HTML) prompt is bad.
-
-    // NEW APPROACH: We put the data into the inputs, and change the onclick of the button.
     const addBtn = document.querySelector('#lessonManagement button[onclick="addLesson()"]');
-    addBtn.innerText = "💾 Speichern";
-    addBtn.onclick = function() {
-        const newTitle = document.getElementById('lessonTitle').value.trim();
-        const newContent = document.getElementById('lessonContent').value.trim();
-        if(newTitle && newContent) {
-            window.cmsDb.updateLesson(moduleId, courseId, lessonId, newTitle, newContent);
-            refreshLessons(moduleId, courseId);
-            clearInputs('lessonTitle', 'lessonContent');
-            // Reset button
-            addBtn.innerText = "Lektion hinzufügen";
-            addBtn.onclick = window.addLesson;
-        }
-    };
+    if(addBtn) {
+        const originalText = addBtn.innerText;
+        addBtn.innerText = "💾 Update Speichern";
+        addBtn.onclick = function() {
+            const updatedTitle = document.getElementById('lessonTitle').value.trim();
+            const updatedContent = document.getElementById('lessonContent').value.trim();
+            const updatedDuration = document.getElementById('lessonDuration').value.trim();
+
+            if(updatedTitle && updatedContent) {
+                window.cmsDb.updateLesson(moduleId, courseId, lessonId, updatedTitle, updatedContent, lesson.order, updatedDuration);
+                refreshLessons(moduleId, courseId);
+                clearInputs('lessonTitle', 'lessonContent', 'lessonDuration');
+                addBtn.innerText = originalText;
+                addBtn.onclick = window.addLesson;
+            }
+        };
+    }
 };
 
 window.deleteLesson = function(moduleId, courseId, lessonId) {
@@ -270,60 +310,22 @@ window.updateAdminStats = function() {
     const statsContainer = document.getElementById('adminStats');
     if (statsContainer) {
         statsContainer.innerHTML = `
-            <div class="card" style="text-align:center"><h3>${modules.length}</h3><p>Module</p></div>
-            <div class="card" style="text-align:center"><h3>${courseCount}</h3><p>Kurse</p></div>
-            <div class="card" style="text-align:center"><h3>${lessonCount}</h3><p>Lektionen</p></div>
+            <div class="card text-center"><h3>${modules.length}</h3><p>Module</p></div>
+            <div class="card text-center"><h3>${courseCount}</h3><p>Kurse</p></div>
+            <div class="card text-center"><h3>${lessonCount}</h3><p>Lektionen</p></div>
         `;
     }
 };
 
 // --- UTILS ---
 function clearInputs(...ids) {
-    ids.forEach(id => document.getElementById(id).value = '');
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if(el) el.value = '';
+    });
 }
 
-// --- USER FEATURES ---
-window.updateRecentActivity = function() {
-    // Placeholder: In a real app we'd track last visited.
-    // For now, let's just leave this empty or show something simple if we had the data.
-};
-
-window.generateCertificate = function(courseTitle) {
-    const name = prompt("Bitte deinen Namen für das Zertifikat eingeben:");
-    if (!name) return;
-
-    const win = window.open('', '', 'width=800,height=600');
-    win.document.write(`
-        <html>
-        <head>
-            <title>Zertifikat</title>
-            <style>
-                body { font-family: sans-serif; text-align: center; padding: 50px; background: #f8fafc; }
-                .cert { border: 10px solid #3b82f6; padding: 50px; background: white; }
-                h1 { color: #1e293b; font-size: 48px; }
-                p { font-size: 24px; color: #64748b; }
-                .name { font-size: 32px; font-weight: bold; color: #0f172a; margin: 20px 0; border-bottom: 2px solid #3b82f6; display: inline-block; }
-            </style>
-        </head>
-        <body>
-            <div class="cert">
-                <h1>Zertifikat</h1>
-                <p>Hiermit wird bestätigt, dass</p>
-                <div class="name">${name}</div>
-                <p>den Kurs <strong>${courseTitle}</strong> erfolgreich abgeschlossen hat.</p>
-                <p>🎉 Herzlichen Glückwunsch!</p>
-                <small>${new Date().toLocaleDateString()}</small>
-            </div>
-            <script>window.print();</script>
-        </body>
-        </html>
-    `);
-    win.document.close();
-};
-
-/* =============================
-   QUIZ MANAGER
-   ============================= */
+// --- QUIZ MANAGER ---
 let quizModuleId, quizCourseId, quizLessonId;
 let currentQuestions = [];
 
@@ -333,7 +335,7 @@ window.manageQuiz = function(moduleId, courseId, lessonId) {
     quizLessonId = lessonId;
 
     const quiz = window.cmsDb.getQuiz(moduleId, courseId, lessonId);
-    currentQuestions = quiz || []; // Load existing or empty
+    currentQuestions = quiz || [];
 
     document.getElementById('quizManagement').style.display = 'block';
     document.getElementById('quizManagement').scrollIntoView({behavior: 'smooth'});
@@ -361,7 +363,7 @@ function renderQuizEditor() {
                 <p><strong>F:</strong> ${q.question}</p>
                 <p><strong>A:</strong> ${q.options.join(', ')}</p>
                 <p><strong>Korrekt:</strong> ${q.options[q.correct]}</p>
-                <button onclick="deleteQuestion(${idx})" class="danger" style="padding:5px 10px; font-size:12px">Löschen</button>
+                <button onclick="deleteQuestion(${idx})" class="danger small" style="margin-top:10px">Löschen</button>
             `;
             container.appendChild(div);
         });
@@ -395,10 +397,8 @@ window.addQuestion = function() {
         correct: correctIdx
     });
 
-    // Save immediately
     window.cmsDb.saveQuiz(quizModuleId, quizCourseId, quizLessonId, currentQuestions);
 
-    // Clear inputs
     document.getElementById('qText').value = '';
     document.getElementById('qOpt1').value = '';
     document.getElementById('qOpt2').value = '';
@@ -412,4 +412,42 @@ window.deleteQuestion = function(idx) {
     currentQuestions.splice(idx, 1);
     window.cmsDb.saveQuiz(quizModuleId, quizCourseId, quizLessonId, currentQuestions);
     renderQuizEditor();
+};
+
+// --- CERTIFICATE ---
+window.generateCertificate = function(courseTitle) {
+    const user = window.cmsDb.getCurrentUser();
+    const name = user.name !== 'Gast' ? user.name : prompt("Bitte deinen Namen für das Zertifikat eingeben:");
+    if (!name) return;
+
+    const win = window.open('', '', 'width=800,height=600');
+    win.document.write(`
+        <html>
+        <head>
+            <title>Zertifikat</title>
+            <style>
+                body { font-family: sans-serif; text-align: center; padding: 50px; background: #f8fafc; }
+                .cert { border: 10px solid #3b82f6; padding: 50px; background: white; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                h1 { color: #1e293b; font-size: 48px; margin-bottom: 10px; }
+                h2 { color: #3b82f6; font-size: 24px; text-transform: uppercase; letter-spacing: 2px; }
+                p { font-size: 20px; color: #64748b; line-height: 1.6; }
+                .name { font-size: 42px; font-weight: bold; color: #0f172a; margin: 30px 0; border-bottom: 4px solid #3b82f6; display: inline-block; padding-bottom: 10px; }
+                .footer { margin-top: 50px; font-size: 14px; color: #94a3b8; }
+            </style>
+        </head>
+        <body>
+            <div class="cert">
+                <h2>Offizielle Bestätigung</h2>
+                <h1>Zertifikat</h1>
+                <p>Hiermit wird bestätigt, dass</p>
+                <div class="name">${name}</div>
+                <p>den Kurs <strong>${courseTitle}</strong> erfolgreich abgeschlossen hat.</p>
+                <p>🎉 Herzlichen Glückwunsch!</p>
+                <div class="footer">Ausgestellt am ${new Date().toLocaleDateString()} • Weiterbildungsplattform</div>
+            </div>
+            <script>window.print();</script>
+        </body>
+        </html>
+    `);
+    win.document.close();
 };

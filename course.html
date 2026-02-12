@@ -9,13 +9,21 @@
 <body>
 
 <header>
+  <div class="header-controls">
+      <div class="search-bar">
+          <span>🔍</span>
+          <input id="searchInput" placeholder="Kurse suchen..." onkeyup="filterCourses()">
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+  </div>
+
   <h1 id="moduleTitle">Modul-Kurse</h1>
   <p class="lead">Wähle einen Kurs aus diesem Modul.</p>
 </header>
 
 <nav style="text-align:center; margin:20px 0;">
-  <button onclick="history.back()">⬅️ Zurück</button>
-  <button onclick="location.href='index.html'" style="margin-left:10px">🏠 Startseite</button>
+  <button onclick="history.back()" class="secondary">⬅️ Zurück</button>
+  <button onclick="location.href='index.html'" class="secondary" style="margin-left:10px">🏠 Startseite</button>
 </nav>
 
 <section>
@@ -29,5 +37,22 @@
 <script src="js/db.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/app.js"></script>
+
+<script>
+    function filterCourses() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const params = new URLSearchParams(window.location.search);
+        const moduleId = params.get('moduleId');
+        const module = window.cmsDb.getModule(moduleId);
+        if(!module) return;
+
+        const filtered = module.courses.filter(c =>
+            c.title.toLowerCase().includes(query) ||
+            c.desc.toLowerCase().includes(query)
+        );
+
+        window.cmsUi.renderCourses('courseList', moduleId, filtered, false);
+    }
+</script>
 </body>
 </html>

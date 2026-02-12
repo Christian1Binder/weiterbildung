@@ -9,10 +9,18 @@
 <body>
 
 <header>
+  <div class="header-controls">
+      <div class="search-bar">
+          <span>🔍</span>
+          <input id="searchInput" placeholder="Suche..." onkeyup="filterModules()">
+      </div>
+      <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+  </div>
+
   <h1>🚀 Ausbildungs‑ & Weiterbildungsplattform</h1>
   <p class="lead">Strukturiertes Wissen, praxisnahe Ausbildung und kontinuierliche Entwicklung – alles an einem Ort.</p>
-  <button>Projekt starten</button>
-  <button onclick="location.href='admin.html'" style="margin-left:10px">Admin</button>
+  <button onclick="document.getElementById('moduleSection').scrollIntoView({behavior:'smooth'})">Projekt starten</button>
+  <button onclick="location.href='admin.html'" style="margin-left:10px" class="secondary">Admin</button>
 </header>
 
 <section>
@@ -22,15 +30,9 @@
   </p>
 </section>
 
-<section>
+<section id="moduleSection">
   <h2>Aktuelle Module</h2>
   <div id="moduleList" class="features"></div>
-</section>
-
-<section id="adminArea" style="display:none">
-  <h2>Admin‑Bereich</h2>
-  <p>Hier können zukünftig Inhalte, Module und Mindmap‑Strukturen verwaltet werden.</p>
-  <div id="adminControls"></div>
 </section>
 
 <section>
@@ -66,5 +68,19 @@
 <script src="js/db.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/app.js"></script>
+
+<script>
+    function filterModules() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const modules = window.cmsDb.getModules();
+
+        const filtered = modules.filter(m =>
+            m.title.toLowerCase().includes(query) ||
+            m.desc.toLowerCase().includes(query)
+        );
+
+        window.cmsUi.renderModules('moduleList', filtered, false);
+    }
+</script>
 </body>
 </html>

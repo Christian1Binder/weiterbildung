@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lektion – Weiterbildungsplattform</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <div class="header-controls">
+    <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
+  </div>
+  <h1 id="lessonTitle">Lektion laden...</h1>
+  <p class="lead" id="courseTitle">Kurs: ...</p>
+</header>
+
+<nav style="text-align:center; margin:20px 0;">
+  <button onclick="history.back()" class="secondary">⬅️ Zurück zur Übersicht</button>
+  <button onclick="location.href='index.html'" class="secondary" style="margin-left:10px">🏠 Startseite</button>
+</nav>
+
+<section>
+  <div class="lesson-content">
+    <div class="lesson-meta">
+        <span id="readingTime">⏱️ 0 min Lesezeit</span>
+        <button id="favBtn" class="favorite-btn" onclick="toggleLessonFavorite()">🤍</button>
+    </div>
+
+    <div id="lessonBody"></div>
+
+    <hr style="margin: 40px 0; border: 0; border-top: 1px solid var(--border);">
+
+    <div style="text-align:center">
+        <button id="completeBtn" onclick="markComplete()" class="success">✅ Als erledigt markieren</button>
+    </div>
+  </div>
+
+  <!-- Quiz Section -->
+  <div id="quizSection" class="quiz-container hidden">
+    <h2>📝 Wissensüberprüfung</h2>
+    <p>Beantworte die folgende Frage, um die Lektion abzuschließen.</p>
+
+    <div id="quizBody">
+        <!-- Quiz content rendered here -->
+    </div>
+
+    <button onclick="submitQuiz()" style="margin-top:20px">Antworten prüfen</button>
+    <div id="quizResult" style="margin-top:15px; font-weight:bold"></div>
+  </div>
+
+  <!-- Navigation -->
+  <div class="flex-between mt-4" style="margin-top: 40px;">
+      <button id="prevBtn" class="secondary" style="visibility:hidden" onclick="navLesson(-1)">⬅️ Vorherige</button>
+      <button id="nextBtn" class="secondary" style="visibility:hidden" onclick="navLesson(1)">Nächste ➡️</button>
+  </div>
+</section>
+
+<footer>
+  © Weiterbildungsprojekt
+</footer>
+
+<!-- Confetti Canvas -->
+<canvas id="confetti" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9999; display:none"></canvas>
+
+<script src="js/db.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/app.js"></script>
+
+<script>
+    // Inline script to handle specific lesson view logic that needs immediate execution or binding
+    const params = new URLSearchParams(window.location.search);
+    const moduleId = params.get('moduleId');
+    const courseId = params.get('courseId');
+    const lessonId = params.get('lessonId');
+
+    let currentLesson = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Theme init
+        if(localStorage.getItem('theme') === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+        }
+
+        if(moduleId && courseId && lessonId) {
+            loadLesson(moduleId, courseId, lessonId);
+        }
+    });
+
+    function loadLesson(mid, cid, lid) {
+        const course = window.cmsDb.getCourse(mid, cid);
+        if(!course) return;
+
+        document.getElementById('courseTitle').innerText = `Kurs: ${course.title}`;
+
+        const lesson = course.lessons.find(l => l.id === lid);
+        if(!lesson) return;
+
+        currentLesson = lesson;
+        document.getElementById('lessonTitle').innerText = lesson.title;
+        document.getElementById('lessonBody').innerHTML = lesson.content; // Allow HTML
+
+        // Reading Time
+        const words = lesson.content.replace(/<[^>]*>/g, '').split(/\s+/).length;
+        const minutes = Math.ceil(words / 200);
+        document.getElementById('readingTime').innerText = `⏱️ ${minutes} min Lesezeit`;
+
+        // Favorite
+        updateFavIcon();
+
+        // Quiz
+        const quiz = window.cmsDb.getQuiz(mid, cid, lid);
+        if(quiz && quiz.length > 0) {
+            document.getElementById('completeBtn').style.display = 'none'; // Hide manual complete if quiz exists
+            document.getElementById('quizSection').classList.remove('hidden');
+            renderQuiz(quiz);
+        }
+
+        // Navigation visibility
+        const currentIndex = course.lessons.findIndex(l => l.id === lid);
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+
+        if(currentIndex > 0) {
+            prevBtn.style.visibility = 'visible';
+            prevBtn.onclick = () => location.href = `lesson_view.html?moduleId=${mid}&courseId=${cid}&lessonId=${course.lessons[currentIndex-1].id}`;
+        }
+
+        if(currentIndex < course.lessons.length - 1) {
+            nextBtn.style.visibility = 'visible';
+            nextBtn.onclick = () => location.href = `lesson_view.html?moduleId=${mid}&courseId=${cid}&lessonId=${course.lessons[currentIndex+1].id}`;
+        }
+
+        // Check if already completed
+        if(window.cmsDb.isLessonComplete(lid)) {
+             document.getElementById('completeBtn').innerText = '✅ Erledigt';
+             document.getElementById('completeBtn').disabled = true;
+        }
+    }
+
+    function toggleLessonFavorite() {
+        if(!currentLesson) return;
+        window.cmsDb.toggleFavorite(currentLesson.id, 'lesson', currentLesson.title);
+        updateFavIcon();
+    }
+
+    function updateFavIcon() {
+        if(!currentLesson) return;
+        const isFav = window.cmsDb.isFavorite(currentLesson.id);
+        const btn = document.getElementById('favBtn');
+        btn.innerText = isFav ? '❤️' : '🤍';
+        if(isFav) btn.classList.add('active');
+        else btn.classList.remove('active');
+    }
+
+    function markComplete() {
+        if(!currentLesson) return;
+        window.cmsDb.markLessonComplete(currentLesson.id);
+        document.getElementById('completeBtn').innerText = '✅ Erledigt';
+        document.getElementById('completeBtn').disabled = true;
+        startConfetti();
+        setTimeout(() => stopConfetti(), 3000);
+    }
+
+    // Quiz Rendering
+    let quizData = null;
+    function renderQuiz(questions) {
+        quizData = questions; // assume simple array for now, maybe just 1 question support first or multiple
+        const container = document.getElementById('quizBody');
+        container.innerHTML = '';
+
+        // Handling single question for simplicity first, or array
+        // Assuming data structure: [{ question: "...", options: ["A", "B"], correct: 0 }]
+        // If it's just one object, wrap in array
+        const qs = Array.isArray(questions) ? questions : [questions];
+
+        qs.forEach((q, idx) => {
+            const div = document.createElement('div');
+            div.className = 'quiz-question';
+            div.dataset.index = idx;
+            div.innerHTML = `<h3>Frage ${idx+1}: ${q.question}</h3>`;
+
+            q.options.forEach((opt, optIdx) => {
+                const optDiv = document.createElement('div');
+                optDiv.className = 'quiz-option';
+                optDiv.innerText = opt;
+                optDiv.onclick = () => selectOption(idx, optIdx);
+                div.appendChild(optDiv);
+            });
+            container.appendChild(div);
+        });
+    }
+
+    let userAnswers = {};
+    function selectOption(qIdx, optIdx) {
+        // Deselect others in this question
+        const qContainer = document.querySelector(`.quiz-question[data-index="${qIdx}"]`);
+        const options = qContainer.querySelectorAll('.quiz-option');
+        options.forEach(o => o.classList.remove('selected'));
+
+        // Select this
+        options[optIdx].classList.add('selected');
+        userAnswers[qIdx] = optIdx;
+    }
+
+    window.submitQuiz = function() {
+        if(!quizData) return;
+        const qs = Array.isArray(quizData) ? quizData : [quizData];
+        let correctCount = 0;
+
+        qs.forEach((q, idx) => {
+            const selected = userAnswers[idx];
+            const qContainer = document.querySelector(`.quiz-question[data-index="${idx}"]`);
+            const options = qContainer.querySelectorAll('.quiz-option');
+
+            // Reset styles
+            options.forEach(o => {
+                o.classList.remove('correct', 'incorrect');
+            });
+
+            if(selected === undefined) {
+                // Not answered
+                return;
+            }
+
+            if(selected === parseInt(q.correct)) {
+                correctCount++;
+                options[selected].classList.add('correct');
+            } else {
+                options[selected].classList.add('incorrect');
+                options[parseInt(q.correct)].classList.add('correct'); // Show correct one
+            }
+        });
+
+        const resultDiv = document.getElementById('quizResult');
+        if(correctCount === qs.length) {
+            resultDiv.innerHTML = '<span style="color:var(--success)">Glückwunsch! Alle Antworten richtig. Lektion abgeschlossen.</span>';
+            markComplete();
+        } else {
+            resultDiv.innerHTML = `<span style="color:var(--danger)">Leider nicht ganz richtig. ${correctCount} von ${qs.length} Punkten. Versuch es nochmal!</span>`;
+        }
+    };
+
+    // Confetti Logic (Simple Implementation)
+    function startConfetti() {
+        const canvas = document.getElementById('confetti');
+        canvas.style.display = 'block';
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const particles = [];
+        for(let i=0; i<100; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height - canvas.height,
+                color: ['#ef4444', '#3b82f6', '#10b981', '#f59e0b'][Math.floor(Math.random()*4)],
+                size: Math.random() * 10 + 5,
+                speed: Math.random() * 5 + 2
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0,0, canvas.width, canvas.height);
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                p.y += p.speed;
+                if(p.y > canvas.height) p.y = -10;
+            });
+            if(canvas.style.display !== 'none') requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
+    function stopConfetti() {
+        document.getElementById('confetti').style.display = 'none';
+    }
+
+    function toggleTheme() {
+        const current = document.documentElement.getAttribute('data-theme');
+        const newTheme = current === 'light' ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+    }
+</script>
+
+</body>
+</html>

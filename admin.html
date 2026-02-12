@@ -14,15 +14,34 @@
 </header>
 
 <nav style="text-align:center; margin:20px 0;">
-  <button onclick="history.back()">⬅️ Zurück</button>
-  <button onclick="location.href='index.html'" style="margin-left:10px">🏠 Startseite</button>
+  <button onclick="history.back()" class="secondary">⬅️ Zurück</button>
+  <button onclick="location.href='index.html'" class="secondary" style="margin-left:10px">🏠 Startseite</button>
 </nav>
+
+<!-- Stats Dashboard -->
+<section>
+    <h2>Übersicht</h2>
+    <div id="adminStats" class="features" style="grid-template-columns: repeat(3, 1fr);">
+        <!-- Stats will be rendered here -->
+    </div>
+</section>
+
+<!-- Backup / Restore -->
+<section style="background:var(--panel); padding:20px; border-radius:14px; margin-top:20px; border:1px solid var(--border)">
+    <h3>Systemverwaltung</h3>
+    <p>Daten sichern oder wiederherstellen.</p>
+    <button onclick="exportData()" class="secondary">💾 Backup herunterladen</button>
+    <button onclick="triggerImport()" class="secondary">📂 Backup wiederherstellen</button>
+    <input type="file" id="importFile" style="display:none" onchange="importData(this)" accept=".json">
+</section>
 
 <section>
   <h2>Neues Modul anlegen</h2>
-  <input id="moduleTitle" placeholder="Modultitel" style="padding:10px;margin:5px;border-radius:6px;border:none">
-  <input id="moduleDesc" placeholder="Beschreibung" style="padding:10px;margin:5px;border-radius:6px;border:none;width:260px">
-  <button onclick="addModule()">Modul hinzufügen</button>
+  <div style="display:flex; flex-wrap:wrap; align-items:center;">
+      <input id="moduleTitle" placeholder="Modultitel" style="flex:1; min-width:200px">
+      <input id="moduleDesc" placeholder="Beschreibung" style="flex:2; min-width:200px">
+      <button onclick="addModule()">Modul hinzufügen</button>
+  </div>
 </section>
 
 <section id="moduleManagement">
@@ -30,31 +49,76 @@
   <div id="moduleList" class="features"></div>
 </section>
 
-<section id="courseManagement" style="display:none; background:rgba(255,255,255,0.03); padding:20px; border-radius:14px; margin-top:40px">
+<!-- Course Management -->
+<section id="courseManagement" style="display:none; background:rgba(255,255,255,0.03); padding:20px; border-radius:14px; margin-top:40px; border:1px solid var(--border)">
   <h2 id="selectedModuleTitle">Kursverwaltung</h2>
   <div style="margin-bottom:20px">
-    <input id="courseTitle" placeholder="Kurstitel" style="padding:10px;margin:5px;border-radius:6px;border:none">
-    <input id="courseDesc" placeholder="Beschreibung" style="padding:10px;margin:5px;border-radius:6px;border:none;width:260px">
+    <input id="courseTitle" placeholder="Kurstitel">
+    <input id="courseDesc" placeholder="Beschreibung">
     <button onclick="addCourse()">Kurs hinzufügen</button>
-    <button onclick="closeCourseMgmt()" style="background:var(--muted); margin-left:10px">Schließen</button>
+    <button onclick="closeCourseMgmt()" class="secondary" style="margin-left:10px">Schließen</button>
   </div>
   <div id="courseList" class="features"></div>
 </section>
 
-<section id="lessonManagement" style="display:none; background:rgba(255,255,255,0.03); padding:20px; border-radius:14px; margin-top:40px">
+<!-- Lesson Management -->
+<section id="lessonManagement" style="display:none; background:rgba(255,255,255,0.03); padding:20px; border-radius:14px; margin-top:40px; border:1px solid var(--border)">
   <h2 id="selectedCourseTitle">Lektionsverwaltung</h2>
   <div style="margin-bottom:20px">
-    <input id="lessonTitle" placeholder="Lektionstitel" style="padding:10px;margin:5px;border-radius:6px;border:none; display:block; width:100%; max-width:400px">
-    <textarea id="lessonContent" placeholder="Inhalt (HTML/Text)" style="width:100%; height:100px; margin:5px; border-radius:8px; background:white; color:black; padding:10px; border:none; display:block"></textarea>
-    <button onclick="addLesson()">Lektion hinzufügen</button>
-    <button onclick="closeLessonMgmt()" style="background:var(--muted); margin-left:10px">Schließen</button>
+    <input id="lessonTitle" placeholder="Lektionstitel" style="display:block; width:100%; max-width:600px">
+    <textarea id="lessonContent" placeholder="Inhalt (HTML erlaubt, z.B. <b>Fett</b>, <p>Absatz</p>)" style="width:100%; height:200px; margin:5px; border-radius:8px; display:block"></textarea>
+    <div style="margin-top:10px">
+        <button onclick="addLesson()">Lektion hinzufügen</button>
+        <button onclick="manageQuiz(currentModuleId, currentCourseId, currentLessonId)" id="quizBtn" class="secondary" style="display:none">Quiz bearbeiten</button>
+        <button onclick="closeLessonMgmt()" class="secondary" style="margin-left:10px">Schließen</button>
+    </div>
   </div>
   <div id="lessonList"></div>
+</section>
+
+<!-- Quiz Management -->
+<section id="quizManagement" style="display:none; background:var(--panel); padding:20px; border-radius:14px; margin-top:40px; border:1px solid var(--border)">
+    <h2>Quiz verwalten</h2>
+    <p>Fragen für die gewählte Lektion erstellen.</p>
+
+    <div style="background:var(--bg); padding:15px; border-radius:10px; margin-bottom:20px">
+        <h4>Neue Frage</h4>
+        <input id="qText" placeholder="Fragetext">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px">
+            <input id="qOpt1" placeholder="Antwort 1">
+            <input id="qOpt2" placeholder="Antwort 2">
+            <input id="qOpt3" placeholder="Antwort 3 (Optional)">
+        </div>
+        <label style="display:block; margin:10px 5px">Korrekte Antwort:</label>
+        <select id="qCorrect">
+            <option value="0">Antwort 1</option>
+            <option value="1">Antwort 2</option>
+            <option value="2">Antwort 3</option>
+        </select>
+        <button onclick="addQuestion()" class="success">Frage hinzufügen</button>
+        <button onclick="closeQuizMgmt()" class="secondary" style="margin-left:10px">Schließen</button>
+    </div>
+
+    <div id="quizQuestionsList" class="features"></div>
 </section>
 
 <script src="js/db.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/app.js"></script>
+
+<!-- Inline script for dynamic quiz button visibility in lesson list -->
+<script>
+    // Overwriting renderLessons in ui.js might be cleaner, but I can also just patch the HTML logic.
+    // Actually ui.js renders the lesson list. I need to make sure `manageQuiz` button is available per lesson row in the list,
+    // OR have a "Quiz" button next to edit/delete.
+
+    // I already updated ui.js (partially). Let's check ui.js again.
+    // In ui.js renderLessons:
+    // `<button onclick="editLesson(...)">Bearbeiten</button>`
+    // I should probably add a "Quiz" button there too.
+
+    // I will use replace_with_git_merge_diff on js/ui.js to add the Quiz button.
+</script>
 
 </body>
 </html>
